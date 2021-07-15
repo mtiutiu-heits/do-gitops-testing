@@ -1,41 +1,5 @@
 terraform {
-  required_version = ">= 0.13"
-
-  required_providers {
-    github = {
-      source = "integrations/github"
-      version = ">= 4.5.2"
-    }
-    kubernetes = {
-      source  = "hashicorp/kubernetes"
-      version = ">= 2.0.2"
-    }
-    kubectl = {
-      source  = "gavinbunney/kubectl"
-      version = ">= 1.10.0"
-    }
-    flux = {
-      source  = "fluxcd/flux"
-      version = ">= 0.0.13"
-    }
-    tls = {
-      source  = "hashicorp/tls"
-      version = "3.1.0"
-    }
-  }
-}
-
-provider "flux" {}
-
-provider "kubectl" {}
-
-provider "kubernetes" {
-  config_path = "~/.kube/config"
-}
-
-provider "github" {
-  owner = var.github_owner
-  token = var.github_token
+  required_version = ">= 1.0.2"
 }
 
 # SSH
@@ -46,6 +10,25 @@ locals {
 resource "tls_private_key" "main" {
   algorithm = "RSA"
   rsa_bits  = 4096
+}
+
+# DOKS
+data "digitalocean_kubernetes_cluster" "primary" {
+  name = var.doks_cluster_name
+}
+
+resource "digitalocean_kubernetes_cluster" "primary" {
+  name   = var.doks_cluster_name
+  region = var.doks_cluster_region
+  version = var.doks_cluster_version
+
+  node_pool {
+    name = "${var.doks_cluster_name}_pool"
+    size       = var.doks_cluster_pool_size
+    auto_scale = true
+    min_nodes  = var.doks_cluster_pool_nodes.min
+    max_nodes  = var.doks_cluster_pool_nodes.max
+  }
 }
 
 # Flux
@@ -68,6 +51,7 @@ resource "kubernetes_namespace" "flux_system" {
   lifecycle {
     ignore_changes = [
       metadata[0].labels,
+      metadata[0].annotations,  # TODO: need to check if this one can be safely ignored
     ]
   }
 }
