@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 1.0.2"
+  required_version = "1.0.2"
 }
 
 # SSH
@@ -23,7 +23,7 @@ resource "digitalocean_kubernetes_cluster" "primary" {
   version = var.doks_cluster_version
 
   node_pool {
-    name = "${var.doks_cluster_name}_pool"
+    name = "${var.doks_cluster_name}-pool"
     size       = var.doks_cluster_pool_size
     auto_scale = true
     min_nodes  = var.doks_cluster_pool_nodes.min

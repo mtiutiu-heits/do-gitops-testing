@@ -2,23 +2,23 @@ terraform {
   required_providers {
     github = {
       source  = "integrations/github"
-      version = ">= 4.5.2"
+      version = "4.12.2"
     }
     digitalocean = {
       source  = "digitalocean/digitalocean"
-      version = ">=2.10.1"
+      version = "2.10.1"
     }
     kubernetes = {
       source  = "hashicorp/kubernetes"
-      version = ">= 2.0.2"
+      version = "2.3.2"
     }
     kubectl = {
       source  = "gavinbunney/kubectl"
-      version = ">= 1.10.0"
+      version = "1.11.2"
     }
     flux = {
       source  = "fluxcd/flux"
-      version = ">= 0.0.13"
+      version = "0.2.0"
     }
     tls = {
       source  = "hashicorp/tls"
