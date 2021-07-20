@@ -27,6 +27,10 @@ terraform {
   }
 }
 
+provider "digitalocean" {
+  token = var.do_token
+}
+
 provider "flux" {}
 
 provider "kubectl" {

@@ -1,7 +1,12 @@
 # DOKS
+variable "do_token" {
+  type = string
+  description = "DigitalOcean API token"
+}
+
 variable "doks_cluster_name" {
   type = string
-  default = "mtiutiu-testing-cluster"
+  default = "doks-testing-cluster"
   description = "DOKS cluster name"
 }
 
@@ -50,26 +55,24 @@ variable "github_ssh_pub_key" {
   description = "github ssh public key"
 }
 
-variable "repository_name" {
+variable "github_repository_name" {
   type        = string
-  default     = "do-gitops-testing"
   description = "github repository name"
 }
 
-variable "repository_visibility" {
+variable "github_repository_visibility" {
   type        = string
   default     = "public"
   description = "github repo visibility"
 }
 
-variable "branch" {
+variable "github_repository_branch" {
   type        = string
   default     = "main"
-  description = "branch name"
+  description = "github repository branch name"
 }
 
-variable "target_path" {
+variable "github_repository_target_path" {
   type        = string
-  default     = "mtiutiu-testing-cluster"
   description = "flux sync target path"
 }

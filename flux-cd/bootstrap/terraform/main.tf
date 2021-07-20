@@ -15,15 +15,18 @@ resource "tls_private_key" "main" {
 # DOKS
 data "digitalocean_kubernetes_cluster" "primary" {
   name = var.doks_cluster_name
+  depends_on = [
+    digitalocean_kubernetes_cluster.primary
+  ]
 }
 
 resource "digitalocean_kubernetes_cluster" "primary" {
-  name   = var.doks_cluster_name
-  region = var.doks_cluster_region
+  name    = var.doks_cluster_name
+  region  = var.doks_cluster_region
   version = var.doks_cluster_version
 
   node_pool {
-    name = "${var.doks_cluster_name}-pool"
+    name       = "${var.doks_cluster_name}-pool"
     size       = var.doks_cluster_pool_size
     auto_scale = true
     min_nodes  = var.doks_cluster_pool_nodes.min
@@ -33,13 +36,13 @@ resource "digitalocean_kubernetes_cluster" "primary" {
 
 # Flux
 data "flux_install" "main" {
-  target_path = var.target_path
+  target_path = var.github_repository_target_path
 }
 
 data "flux_sync" "main" {
-  target_path = var.target_path
-  url         = "ssh://git@github.com/${var.github_owner}/${var.repository_name}.git"
-  branch      = var.branch
+  target_path = var.github_repository_target_path
+  url         = "ssh://git@github.com/${var.github_owner}/${var.github_repository_name}.git"
+  branch      = var.github_repository_branch
 }
 
 # Kubernetes
@@ -51,7 +54,7 @@ resource "kubernetes_namespace" "flux_system" {
   lifecycle {
     ignore_changes = [
       metadata[0].labels,
-      metadata[0].annotations,  # TODO: need to check if this one can be safely ignored
+      metadata[0].annotations, # TODO: need to check if this one can be safely ignored
     ]
   }
 }
@@ -106,18 +109,18 @@ resource "kubernetes_secret" "main" {
 
 # GitHub
 resource "github_repository" "main" {
-  name       = var.repository_name
-  visibility = var.repository_visibility
+  name       = var.github_repository_name
+  visibility = var.github_repository_visibility
   auto_init  = true
 }
 
 resource "github_branch_default" "main" {
   repository = github_repository.main.name
-  branch     = var.branch
+  branch     = var.github_repository_branch
 }
 
 resource "github_repository_deploy_key" "main" {
-  title      = "mtiutiu-testing-cluster"
+  title      = var.doks_cluster_name
   repository = github_repository.main.name
   key        = tls_private_key.main.public_key_openssh
   read_only  = true
@@ -127,19 +130,19 @@ resource "github_repository_file" "install" {
   repository = github_repository.main.name
   file       = data.flux_install.main.path
   content    = data.flux_install.main.content
-  branch     = var.branch
+  branch     = var.github_repository_branch
 }
 
 resource "github_repository_file" "sync" {
   repository = github_repository.main.name
   file       = data.flux_sync.main.path
   content    = data.flux_sync.main.content
-  branch     = var.branch
+  branch     = var.github_repository_branch
 }
 
 resource "github_repository_file" "kustomize" {
   repository = github_repository.main.name
   file       = data.flux_sync.main.kustomize_path
   content    = data.flux_sync.main.kustomize_content
-  branch     = var.branch
+  branch     = var.github_repository_branch
 }
