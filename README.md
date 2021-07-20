@@ -212,6 +212,23 @@ After installation and if all the above steps for doctl and kubectl were complet
 ```bash
 flux check
 ```
+Sample output:
+
+```
+► checking prerequisites
+✔ kubectl 1.21.3 >=1.18.0-0
+✔ Kubernetes 1.21.2 >=1.16.0-0
+► checking controllers
+✗ helm-controller: deployment not ready
+► ghcr.io/fluxcd/helm-controller:v0.11.1
+✔ kustomize-controller: deployment ready
+► ghcr.io/fluxcd/kustomize-controller:v0.13.1
+✔ notification-controller: deployment ready
+► ghcr.io/fluxcd/notification-controller:v0.15.0
+✔ source-controller: deployment ready
+► ghcr.io/fluxcd/source-controller:v0.15.3
+✔ all checks passed
+```
 
 Inspect all resources with:
 
@@ -219,8 +236,27 @@ Inspect all resources with:
 flux get all
 ```
 
+Sample output:
+
+```
+NAME                     	READY	MESSAGE                                                        	REVISION                                     	SUSPENDED 
+gitrepository/flux-system	True 	Fetched revision: main/1d69c3c9591e18a68d5794c2d21d4b31c3398ac6	main/1d69c3c9591e18a68d5794c2d21d4b31c3398ac6	False    	
+
+NAME                     	READY	MESSAGE                                                        	REVISION                                     	SUSPENDED 
+kustomization/flux-system	True 	Applied revision: main/1d69c3c9591e18a68d5794c2d21d4b31c3398ac6	main/1d69c3c9591e18a68d5794c2d21d4b31c3398ac6	False  
+```
+
 In case we need to do some troubleshooting and also see what Flux CD is doing we can access the logs via:
 
 ```bash
 flux logs
+```
+
+Sample output:
+
+```
+...
+2021-07-20T12:31:36.696Z info GitRepository/flux-system.flux-system - Reconciliation finished in 1.193290329s, next run in 1m0s 
+2021-07-20T12:32:37.873Z info GitRepository/flux-system.flux-system - Reconciliation finished in 1.176637507s, next run in 1m0s 
+...
 ```
