@@ -8,7 +8,7 @@ This section contains information about how we can bootstrap **DOKS** and **Flux
 ### Requirements:
 
 1. A DigitalOcean [account](https://cloud.digitalocean.com) is required in order to provision the DOKS cluster.
-2. A [Github](https://github.com/) account is needed with a [personal access token](https://github.com/settings/tokens) that has the `repo` permissions set (save it for later use).
+2. Next a [Github](https://github.com/) account is needed with a [personal access token](https://github.com/settings/tokens) that has the `repo` permissions set (save it for later use).
 3. A git client needs to be installed as well depending on the distro.
   
     E.g.: on MacOS it can be installed via Homebrew:
@@ -31,15 +31,31 @@ This section contains information about how we can bootstrap **DOKS** and **Flux
    
     From your DigitalOcean account go to [API](https://cloud.digitalocean.com/account/api) section in order to generate the tokens. 
     
-    Create a personal access token first:
+    Create a personal access token first by clicking the big blue `Generate New Token` button:
+
+    ![Applications & API Key](content/img/pt_gen_1st.png)
+
+    then make sure to give it a proper name and that the `Write` scope is checked:
+
+    ![Applications & API Key](content/img/pt_gen_2nd.png)
+
+    In the end we should have something like this:
 
     ![Applications & API Key](content/img/api_access_key.png)
 
-    then one for spaces:
+    Next we navigate to `Spaces access keys` and click the `Generate New Key` button:
+
+    ![Spaces Key](content/img/spk_gen_1st.png)
+
+    then give it a proper name and mark it as done:
+
+    ![Spaces Key](content/img/spk_gen_2nd.png)
+
+    In the end we should have something like this:
 
     ![Spaces Key](content/img/spaces_key.png)
 
-2. Next we have to create a DO Space for storing the Terraform state file. Go ahead to your DigitalOcean account panel. Select a region that's more closer to you then make sure that `Restrict file listing` is checked and finally give it a name. The required steps are highlighted below:
+2. Going further we have to create a DO Space for storing the Terraform state file. Go ahead to your DigitalOcean account panel. Select a region that's more closer to you then make sure that `Restrict file listing` is checked and finally give it a name. The required steps are highlighted below:
 
     ![Create DO Space](content/img/do_spaces_rs.png)
 
@@ -108,7 +124,7 @@ This section contains information about how we can bootstrap **DOKS** and **Flux
 
 In order to inspect the Kubernetes cluster state as well as Flux CD and getting information about various components we need to install a few tools like:
 
-1. `doctl` for DigitalOcean interaction (most of the tasks that can be done via the DO account web interface can be accomplished from CLI as well) 
+1. `doctl` for DigitalOcean interaction (most of the tasks that can be done via the DO account web interface can be accomplished using the CLI version as well) 
 2. `kubectl` for Kubernetes interaction
 3. `flux` for Flux CD interaction
 
@@ -121,7 +137,7 @@ brew info doctl
 brew install doctl
 ```
 
-After installation we have to initialize it using the DigitalOcean personal token created at the beginning of this tutorial (the context represents the token name that was assigned to it):
+After installation we have to initialize it using the DigitalOcean personal token created at the beginning of this blueprint (the context represents the token name that was assigned to it):
 
 ```bash
 doctl auth init --context <personal_token_assigned_name>
@@ -136,13 +152,13 @@ brew info kubectl
 brew install kubectl
 ```
 
-Next we have to set kubectl context to point to our cluster created in this tutorial like this:
+Next we have to set kubectl context to point to our cluster created in this blueprint like this:
 
 ```bash
 doctl k8s cluster kubeconfig save <doks_cluster_name>
 ```
 
-Where `<doks_cluster_name>` must be replaced with the name given to the cluster in the `project.tfvars` file created in this tutorial (the variable is `doks_cluster_name`).
+Where `<doks_cluster_name>` must be replaced with the name given to the cluster in the `project.tfvars` file created in this blueprint (the variable is `doks_cluster_name`).
 
 ### Flux
 
@@ -160,7 +176,7 @@ Inspect all resources with:
 flux get all
 ```
 
-In case we need to do some troubleshooting and also see what Flux CD is doing we can have access to the logs via:
+In case we need to do some troubleshooting and also see what Flux CD is doing we can access the logs via:
 
 ```bash
 flux logs
