@@ -167,10 +167,16 @@ brew info doctl
 brew install doctl
 ```
 
-After installation we have to initialize it using the DigitalOcean personal token created at the beginning of this blueprint (the context represents the token name that was assigned to it):
+After installation we have to initialize it using the DigitalOcean personal token created at the beginning of this blueprint (when asked just paste it):
 
 ```bash
-doctl auth init --context <personal_token_assigned_name>
+doctl auth init
+```
+
+Verify that the new auth context was added with:
+
+```bash
+doctl auth list
 ```
 
 ### Kubectl
@@ -189,6 +195,13 @@ doctl k8s cluster kubeconfig save <doks_cluster_name>
 ```
 
 Where `<doks_cluster_name>` must be replaced with the name given to the cluster in the `project.tfvars` file created in this blueprint (the variable is `doks_cluster_name`).
+
+Next check that the context was set and it's pointing to your Kubernetes cluster by running:
+
+```bash
+kubectl config get-contexts
+```
+
 
 ### Flux
 
