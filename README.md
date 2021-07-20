@@ -100,15 +100,36 @@ This section contains information about how we can bootstrap **DOKS** and **Flux
     ```bash
     cp project.tfvars.sample project.tfvars
     ```
-    And then fill in the right values for the project ([variables.tf](flux-cd/bootstrap/terraform/variables.tf) contains the description for each variable).
+    And then fill in the right values for the project ([variables.tf](flux-cd/bootstrap/terraform/variables.tf) contains the description for each variable). Most important ones are highlighted below:
+    ```
+    # DOKS
+    do_token = "test123"                        # <---- CHANGE ME
+    doks_cluster_name = "test-fluxcd-cluster"   # <---- CHANGE ME
+    # doks_cluster_region = ""
+    # doks_cluster_version= ""
+    # doks_cluster_pool_size= ""
+    # doks_cluster_pool_nodes = {}
+
+    # Github
+    github_owner = "test"                                   # <---- CHANGE ME
+    github_token = "ghp_6hTesting"                          # <---- CHANGE ME
+    github_repository_name = "test"                         # <---- CHANGE ME
+    github_repository_target_path = "test-fluxcd-cluster"   # <---- CHANGE ME
+    # github_repository_visibility = ""
+    # github_repository_branch = ""
+    ```
     
 7. Going furher let's create a `plan` in order to inspect the infrastructure changes:
 
-    `terraform plan -var-file="project.tfvars"`
+    ```bash
+    terraform plan -var-file="project.tfvars"
+    ```
 
 8. If everything seems alright then `apply` the changes with: 
    
-    `terraform apply -var-file="project.tfvars"`
+    ```bash
+    terraform apply -var-file="project.tfvars"
+    ```
 
     Sample output:
     ```
@@ -124,7 +145,10 @@ This section contains information about how we can bootstrap **DOKS** and **Flux
     ...
     ```
 
-    If everything goes well after Terraform finishes the DOKS cluster should be up and running as well as Flux CD.
+    If everything goes well after Terraform finishes the DOKS cluster should be up and running as well as Flux CD. The terraform state file should be saved as well in your `DO Spaces` bucket so please go ahead and check it. The bucket state should look like in the picture down below:
+
+    ![DO Spaces Terraform state file](content/img/tf_state_s3.png)
+
 
 ## Next steps
 
