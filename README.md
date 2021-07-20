@@ -39,7 +39,7 @@ This section contains information about how we can bootstrap **DOKS** and **Flux
 
     ![Applications & API Key](content/img/pt_gen_2nd.png)
 
-    In the end we should have something like this:
+    In the end we should have something like this (**don't forget to copy the key as we will need it later on**):
 
     ![Applications & API Key](content/img/api_access_key.png)
 
@@ -51,11 +51,11 @@ This section contains information about how we can bootstrap **DOKS** and **Flux
 
     ![Spaces Key](content/img/spk_gen_2nd.png)
 
-    In the end we should have something like this:
+    In the end we should have something like this (**don't forget to copy the keys as we will need them later on**):
 
     ![Spaces Key](content/img/spaces_key.png)
 
-2. Going further we have to create a DO Space for storing the Terraform state file. Go ahead to your DigitalOcean account panel. Select a region that's more closer to you then make sure that `Restrict file listing` is checked and finally give it a name. The required steps are highlighted below:
+2. Going further we have to create a DO Space for storing the Terraform state file. Go ahead to your DigitalOcean account panel and click on the `Create` green button from the upper right corner. Select a region that's more closer to you then make sure that `Restrict file listing` is checked and finally give it a proper name. The required steps are highlighted below:
 
     ![Create DO Space](content/img/do_spaces_rs.png)
 
@@ -69,10 +69,16 @@ This section contains information about how we can bootstrap **DOKS** and **Flux
 
 5. Terraform initialization must be perfomed next. A [DO Spaces](https://cloud.digitalocean.com/spaces) backend for storing the Terraform state file is highly recommended because we do not have to worrry about exposing sensitive data as long as the space is private of course. Another advantage is that the state of our infrastructure is backed up so we can re-use it in order to do a refresh and change only the affected parts which is a great and powerful feature of Terraform in the end. Having a common shared space across more team members is desired as well in order to perform collaborative work via Terraform.
    
-    A bucket must be creaFor the next step we will need to provide the `backend.tf` file as well as the previously created `access` and `secret` DO Space keys so please fill in the `<>` placeholders accordingly. The [backend.tf.sample](flux-cd/bootstrap/terraform/backend.tf.sample) must be reviewed and modified accordingly to provide the appropriate values for `endpoint`, `region`, `bucket` and `key`.
-   
+    A DO Spaces Terraform backend must be created for the next step so we need to provide the `backend.tf` file:
+
     ```bash
     cp backend.tf.sample backend.tf
+    ```
+    The new `backend.tf` file must be reviewed and modified accordingly to provide the appropriate values for `endpoint`, `region`, `bucket` and `key` (explanations provided there).
+
+    Using the previously created `access` and `secret` DO Space keys we need to fill in the `<>` placeholders accordingly and create the backend:
+   
+    ```bash
     terraform init  --backend-config="access_key=<your_do_spaces_access_key>" --backend-config="secret_key=<your_do_spaces_secret_key>"
     ```
 
