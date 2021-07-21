@@ -1,5 +1,11 @@
-# GitOps via Flux CD and DOKS
-This blueprint will guide you step by step on how to spin up a DOKS (DigitalOcean Kubernetes) cluster and Flux CD for K8S deployments management in a GitOps fashion. Everything is done via [Terraform](https://www.terraform.io) and the steps that are required should be pretty straightforward.
+# Overview of solutions and concepts used in this blueprint
+
+This blueprint will guide you step by step on how to spin up a DOKS (DigitalOcean Kubernetes) cluster and Flux CD for managing application deployments in a GitOps fashion.
+
+[Terraform](https://www.terraform.io) was chosen to write `infrastructure as code` using declarative configuration files which allows for concise descriptions of resources using blocks, arguments, and expressions. In our guide it will be responsible with spinning up the DOKS (DigitalOcean Kubernetes) cluster as well as [Flux CD](https://fluxcd.io).
+
+[Flux CD](https://fluxcd.io) is used for managing the `Continuous Delivery` of applications inside the DigitalOcean Kubernetes cluster as well as a `Gitops` enabler.
+
 
 ## Bootstrapping DOKS and Flux CD
 
