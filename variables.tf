@@ -2,11 +2,12 @@
 variable "do_token" {
   type = string
   description = "DigitalOcean API token"
+  sensitive = true
 }
 
 variable "doks_cluster_name" {
   type = string
-  default = "doks-testing-cluster"
+  default = "doks-fluxcd-cluster"
   description = "DOKS cluster name"
 }
 

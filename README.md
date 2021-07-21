@@ -1,4 +1,4 @@
-# Overview of solutions and concepts used in this blueprint
+# Gitops via DOKS and Flux CD
 
 This blueprint will guide you step by step on how to spin up a DOKS (DigitalOcean Kubernetes) cluster and Flux CD for managing application deployments in a GitOps fashion.
 
@@ -14,7 +14,7 @@ This section contains information about how we can bootstrap **DOKS** and **Flux
 ### Requirements:
 
 1. A DigitalOcean [account](https://cloud.digitalocean.com) is required in order to create the access keys and provision the DOKS cluster.
-2. Next a [Github](https://github.com/) account is needed with a [personal access token](https://github.com/settings/tokens) that has the `repo` permissions set (save it for later use).
+2. Next a [Github](https://github.com/) account is needed.
 3. A git client has to be installed as well depending on the distro.
   
     E.g.: on MacOS it can be installed via Homebrew:
@@ -33,8 +33,16 @@ This section contains information about how we can bootstrap **DOKS** and **Flux
 
 ### Installation steps
 
-1. Let's start with setting up the required stuff on the [DigitalOcean](https://cloud.digitalocean.com) side by creating the necessary tokens first. One is needed for creating/managing the DOKS cluster and another one for [DO Spaces](https://cloud.digitalocean.com/spaces) (similar to AWS S3). The latter is needed for storing the Terraform state file. **Please copy the secrets and keep them safe because we will need them later on**.
-   
+1. Start by creating a [Github personal access token](https://github.com/settings/tokens) that has the `repo` permissions set. Copy the token value and save it in a local environment variable as we will need it later on. While we're at this step we're going to fill in some other required details like the owner, the name and the path in the git repository where Flux CD manifests will be created (make sure to replace the `<>` placeholders accordingly):
+
+    ```bash
+    export TF_VAR_github_owner="<github_owner>"
+    export TF_VAR_github_token="<github_personal_access_token>"
+    export TF_VAR_github_repository_name="<git_repository_name>"
+    export TF_VAR_github_repository_target_path="<flux_cd_sync_target_path>"
+    ```
+2. Let's go next with setting up the required stuff on the [DigitalOcean](https://cloud.digitalocean.com) side by creating the necessary tokens first. One is needed for creating/managing the DOKS cluster and another one for [DO Spaces](https://cloud.digitalocean.com/spaces) (similar to AWS S3). The latter is needed for storing the Terraform state file.
+
     From your DigitalOcean account go to the [API](https://cloud.digitalocean.com/account/api) section in order to generate the tokens. 
     
     Create a personal access token first by clicking the `Generate New Token` button:
@@ -45,10 +53,15 @@ This section contains information about how we can bootstrap **DOKS** and **Flux
 
     ![Applications & API Key](content/img/pt_gen_2nd.png)
 
-    In the end we should have something like this (**don't forget to copy the key as we will need it later on**):
+    In the end we should have something like this:
 
     ![Applications & API Key](content/img/api_access_key.png)
 
+    Copy the token value and save it in a local environment variable as we will need it later on (make sure to replace the `<>` placeholder):
+
+    ```bash
+    export TF_VAR_do_token="<your_do_personal_access_token>"
+    ```
     Next we navigate to `Spaces access keys` and click the `Generate New Key` button:
 
     ![Spaces Key](content/img/spk_gen_1st.png)
@@ -57,36 +70,33 @@ This section contains information about how we can bootstrap **DOKS** and **Flux
 
     ![Spaces Key](content/img/spk_gen_2nd.png)
 
-    In the end we should have something like this (**don't forget to copy the keys as we will need them later on**):
+    In the end we should have something like this:
 
     ![Spaces Key](content/img/spaces_key.png)
-2. Going further we have to create a [DO Space](https://cloud.digitalocean.com/spaces) for storing the Terraform state file. Go ahead to your DigitalOcean account panel and click on the `Create` button (the green one) from the upper right corner. Select a region closer to you then make sure that `Restrict file listing` is checked and finally give it a proper name. The required steps are highlighted below:
+
+    Copy the key and secret value and save each in a local environment variable for later use (make sure to replace the `<>` placeholder):
+
+    ```bash
+    export DO_SPACES_ACCESS_KEY="<your_do_spaces_access_key>"
+    export DO_SPACES_SECRET_KEY="<your_do_spaces_secret_key>"
+    ```
+3. Going further we have to create a [DO Space](https://cloud.digitalocean.com/spaces) for storing the Terraform state file. Go ahead to your DigitalOcean account panel and click on the `Create` button (the green one) from the upper right corner. Select a region closer to you then make sure that `Restrict file listing` is checked and finally give it a proper name. The required steps are highlighted below:
 
     ![Create DO Space](content/img/do_spaces_rs.png)
-3. Clone this repository on your local machine:
+4. Clone this repository on your local machine and navigate to the appropriate directory:
    
     ```bash
-    git clone https://github.com/mtiutiu-heits/do-gitops-testing.git
-    ```
-4. Change directory to `flux-cd/bootstrap/terraform`
-   
-    ```bash
-    cd flux-cd/bootstrap/terraform
+    git clone https://github.com/digitalocean/container-blueprints.git
+    cd create-doks-with-terraform-flux
     ```
 5. Terraform initialization must be perfomed next. A [DO Spaces](https://cloud.digitalocean.com/spaces) bucket for storing the Terraform state file is highly recommended because we do not have to worrry about exposing sensitive data as long as the space is private of course. Another advantage is that the state of our infrastructure is backed up so we can re-use it in order to do a refresh and change only the affected parts which is a great and powerful feature of Terraform in the end. Having a common shared space across more team members is desired as well in order to perform collaborative work via Terraform.
    
-    The [DO Spaces](https://cloud.digitalocean.com/spaces) Terraform backend must be configured in the next step so we need to provide the required `backend.tf` file:
+    The [backend.tf](backend.tf) file must be reviewed and modified accordingly first in order to provide the appropriate values for `endpoint`, `region`, `bucket` and `key` (explanations for each can be found inside).
 
-    ```bash
-    cp backend.tf.sample backend.tf
-    ```
-
-    The new `backend.tf` file must be reviewed and modified accordingly to provide the appropriate values for `endpoint`, `region`, `bucket` and `key` (explanations can be found in [backend.tf.sample](flux-cd/bootstrap/terraform/backend.tf.sample)).
-
-    Using the previously created `access` and `secret` keys for the [DO Spaces](https://cloud.digitalocean.com/spaces) we have to fill in the `<>` placeholders accordingly in order to configure the backend:
+    Let's initialize the backend now using the previously created `access` and `secret` keys for the [DO Spaces](https://cloud.digitalocean.com/spaces):
    
     ```bash
-    terraform init  --backend-config="access_key=<your_do_spaces_access_key>" --backend-config="secret_key=<your_do_spaces_secret_key>"
+    terraform init  --backend-config="access_key=$DO_SPACES_ACCESS_KEY" --backend-config="secret_key=$DO_SPACES_SECRET_KEY"
     ```
 
     Sample output:
@@ -101,41 +111,15 @@ This section contains information about how we can bootstrap **DOKS** and **Flux
     - Finding gavinbunney/kubectl versions matching "1.11.2"...
     ...
     ```
-6. A Terraform `project.tfvars` variables file needs to be created next (this **must not** be commited in git as it may contain sensitive data - the `.gitignore` is already set to ignore this kind of file).
-    There's a [project.tfvars.sample](flux-cd/bootstrap/terraform/project.tfvars.sample) file provided in this repo so we can just rename it:
+6. Going furher let's create a `plan` in order to inspect the infrastructure changes:
 
     ```bash
-    cp project.tfvars.sample project.tfvars
+    terraform plan
     ```
-
-    And then fill in the right values for the project ([variables.tf](flux-cd/bootstrap/terraform/variables.tf) contains the description for each variable). Most important ones are highlighted below:
-
-    ```
-    # DOKS
-    do_token = "test123"                        # <---- CHANGE ME
-    doks_cluster_name = "test-fluxcd-cluster"   # <---- CHANGE ME
-    # doks_cluster_region = ""
-    # doks_cluster_version= ""
-    # doks_cluster_pool_size= ""
-    # doks_cluster_pool_nodes = {}
-
-    # Github
-    github_owner = "test"                                   # <---- CHANGE ME
-    github_token = "ghp_6hTesting"                          # <---- CHANGE ME
-    github_repository_name = "test"                         # <---- CHANGE ME
-    github_repository_target_path = "test-fluxcd-cluster"   # <---- CHANGE ME
-    # github_repository_visibility = ""
-    # github_repository_branch = ""
-    ```
-7. Going furher let's create a `plan` in order to inspect the infrastructure changes:
-
-    ```bash
-    terraform plan -var-file="project.tfvars"
-    ```
-8. If everything seems alright then `apply` the changes with: 
+7. If everything seems alright then `apply` the changes with: 
    
     ```bash
-    terraform apply -var-file="project.tfvars"
+    terraform apply
     ```
 
     Sample output:
@@ -152,13 +136,30 @@ This section contains information about how we can bootstrap **DOKS** and **Flux
     ...
     ```
 
-    If everything goes well after Terraform finishes the DOKS cluster should be up and running as well as Flux CD. The terraform state file should be saved as well in your `DO Spaces` bucket so please go ahead and check it. The bucket state should look like in the picture down below:
+    If everything goes well the [DOKS cluster](https://cloud.digitalocean.com/kubernetes/clusters) should be up and running as well as Flux CD. The terraform state file should be saved in your [DO Spaces](https://cloud.digitalocean.com/spaces) bucket so please go ahead and check it. It should look similar as seen in the picture down below:
 
     ![DO Spaces Terraform state file](content/img/tf_state_s3.png)
 
 
-## Next steps
+## Overriding default variables for Terraform
 
+If some of the default values used by the Terraform module provided in this repository need to be modified then a `project.tfvars` file needs to be created (this **must not** be commited in git as it may contain sensitive data - the `.gitignore` is already set to ignore this kind of file).
+
+There's a [project.tfvars.sample](flux-cd/bootstrap/terraform/project.tfvars.sample) file provided in this repo so we can just rename it:
+
+```bash
+cp project.tfvars.sample project.tfvars
+```
+And then fill in the right values for the project ([variables.tf](flux-cd/bootstrap/terraform/variables.tf) contains the description for each variable).
+
+Now we're going to use this file to provide the required input variables as seen below:
+
+```bash
+terraform plan -var-file="project.tfvars"
+terraform apply -var-file="project.tfvars"
+```
+
+## Inspecting the cluster and applications state
 In order to inspect the Kubernetes cluster as well as the Flux CD state and getting information about various components we need to install a few tools like:
 
 1. `doctl` for DigitalOcean interaction (most of the tasks that can be done via the DO account web interface can be accomplished using the CLI version as well) 
