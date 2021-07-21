@@ -145,12 +145,12 @@ This section contains information about how we can bootstrap **DOKS** and **Flux
 
 If some of the default values used by the Terraform module provided in this repository need to be modified then a `project.tfvars` file needs to be created (this **must not** be commited in git as it may contain sensitive data - the `.gitignore` is already set to ignore this kind of file).
 
-There's a [project.tfvars.sample](flux-cd/bootstrap/terraform/project.tfvars.sample) file provided in this repo so we can just rename it:
+There's a [project.tfvars.sample](project.tfvars.sample) file provided in this repo so we can just rename it:
 
 ```bash
 cp project.tfvars.sample project.tfvars
 ```
-And then fill in the right values for the project ([variables.tf](flux-cd/bootstrap/terraform/variables.tf) contains the description for each variable).
+And then fill in the right values for the project ([variables.tf](variables.tf) contains the description for each variable).
 
 Now we're going to use this file to provide the required input variables as seen below:
 
