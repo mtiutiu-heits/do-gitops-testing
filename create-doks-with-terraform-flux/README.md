@@ -286,9 +286,9 @@ Sample output:
 ...
 ```
 
-# Flux CD example configuration and busybox deployment
+## Flux CD example configuration and busybox deployment
 
-## Configuration steps
+### Configuration steps
 
 We're going to configure our [Flux CD](https://fluxcd.io) installation in order to tell it where it can find our Kubernetes manifests so that it can create the required resources. For this step we will use the Github repo that Terraform created for us which stored in the `TF_VAR_github_repository_name` environment variable that we created at the beginning of this tutorial:
 
