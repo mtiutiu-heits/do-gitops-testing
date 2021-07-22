@@ -175,7 +175,7 @@ terraform plan -var-file="project.tfvars"
 terraform apply -var-file="project.tfvars"
 ```
 
-## Required tools for the cluster and applications state
+## Required tools for inspecting the cluster and applications state
 In order to inspect the Kubernetes cluster as well as the Flux CD state and getting information about various components we need to install a few tools like:
 
 1. `doctl` for DigitalOcean interaction (most of the tasks that can be done via the DO account web interface can be accomplished using the CLI version as well) 
