@@ -1,6 +1,6 @@
-# Gitops via DOKS and Flux CD
+# Gitops stack using DOKS and Flux CD
 
-This blueprint will guide you step by step on how to spin up a DOKS (DigitalOcean Kubernetes) cluster and Flux CD for managing application deployments in a GitOps fashion.
+This blueprint will guide you step by step on how to spin up a single DOKS (DigitalOcean Kubernetes) cluster and Flux CD for managing application deployments in a GitOps fashion. In the end we will also tell [Flux CD](https://fluxcd.io)  to perform a basic deployment of the now ubiquitous `busybox` Docker application.
 
 [Terraform](https://www.terraform.io) was chosen to write `infrastructure as code` using declarative configuration files which allows for concise descriptions of resources using blocks, arguments, and expressions. In our guide it will be responsible with spinning up the DOKS (DigitalOcean Kubernetes) cluster as well as [Flux CD](https://fluxcd.io).
 
@@ -11,7 +11,7 @@ This blueprint will guide you step by step on how to spin up a DOKS (DigitalOcea
 
 This section contains information about how we can bootstrap **DOKS** and **Flux CD** via **Terraform** using **Github** as a SCM provider and source of truth.
 
-### Requirements:
+### Requirements
 
 1. A DigitalOcean [account](https://cloud.digitalocean.com) is required in order to create the access keys and provision the DOKS cluster.
 2. Next a [Github](https://github.com/) account is needed.
@@ -39,6 +39,7 @@ This section contains information about how we can bootstrap **DOKS** and **Flux
     export TF_VAR_github_owner="<github_owner>"
     export TF_VAR_github_token="<github_personal_access_token>"
     export TF_VAR_github_repository_name="<git_repository_name>"
+    export TF_VAR_github_repository_branch="<git_repository_branch>"
     export TF_VAR_github_repository_target_path="<flux_cd_sync_target_path>"
     ```
 2. Let's go next with setting up the required stuff on the [DigitalOcean](https://cloud.digitalocean.com) side by creating the necessary tokens first. One is needed for creating/managing the DOKS cluster and another one for [DO Spaces](https://cloud.digitalocean.com/spaces) (similar to AWS S3). The latter is needed for storing the Terraform state file.
@@ -111,12 +112,17 @@ This section contains information about how we can bootstrap **DOKS** and **Flux
     - Finding gavinbunney/kubectl versions matching "1.11.2"...
     ...
     ```
-6. Going furher let's create a `plan` in order to inspect the infrastructure changes:
+6. Let's give our DOKS cluster a name as well:
+
+    ```bash
+    export TF_VAR_doks_cluster_name="doks-fluxcd-cluster"
+    ```
+7. Going furher let's create a `plan` in order to inspect the infrastructure changes:
 
     ```bash
     terraform plan
     ```
-7. If everything seems alright then `apply` the changes with: 
+8. If everything seems alright then `apply` the changes with: 
    
     ```bash
     terraform apply
@@ -136,10 +142,20 @@ This section contains information about how we can bootstrap **DOKS** and **Flux
     ...
     ```
 
-    If everything goes well the [DOKS cluster](https://cloud.digitalocean.com/kubernetes/clusters) should be up and running as well as Flux CD. The terraform state file should be saved in your [DO Spaces](https://cloud.digitalocean.com/spaces) bucket so please go ahead and check it. It should look similar as seen in the picture down below:
+# Next steps
 
-    ![DO Spaces Terraform state file](content/img/tf_state_s3.png)
+## Seeing the results
+If everything goes well the [DOKS cluster](https://cloud.digitalocean.com/kubernetes/clusters) should be up and running as well as [Flux CD](https://fluxcd.io):
 
+![DOKS state](content/img/doks_created.png)
+
+The terraform state file should be saved in your [DO Spaces](https://cloud.digitalocean.com/spaces) bucket so please go ahead and check it. It should look similar as seen in the picture down below:
+
+![DO Spaces Terraform state file](content/img/tf_state_s3.png)
+
+A new git repository should be created as well for you containing the Flux CD cluster resource files:
+
+![GIT repo state](content/img/flux_git_res.png)
 
 ## Overriding default variables for Terraform
 
@@ -152,19 +168,21 @@ cp project.tfvars.sample project.tfvars
 ```
 And then fill in the right values for the project ([variables.tf](variables.tf) contains the description for each variable).
 
-Now we're going to use this file to provide the required input variables as seen below:
+Now we're going to use this file to provide the required input variables and update the infrastructure as seen below:
 
 ```bash
 terraform plan -var-file="project.tfvars"
 terraform apply -var-file="project.tfvars"
 ```
 
-## Inspecting the cluster and applications state
+## Required tools for the cluster and applications state
 In order to inspect the Kubernetes cluster as well as the Flux CD state and getting information about various components we need to install a few tools like:
 
 1. `doctl` for DigitalOcean interaction (most of the tasks that can be done via the DO account web interface can be accomplished using the CLI version as well) 
 2. `kubectl` for Kubernetes interaction
 3. `flux` for Flux CD interaction
+   
+Having the above at hand will also help us create and manage the required Flux CD resources for example later on.
 
 ### Doctl
 
@@ -266,4 +284,188 @@ Sample output:
 2021-07-20T12:31:36.696Z info GitRepository/flux-system.flux-system - Reconciliation finished in 1.193290329s, next run in 1m0s 
 2021-07-20T12:32:37.873Z info GitRepository/flux-system.flux-system - Reconciliation finished in 1.176637507s, next run in 1m0s 
 ...
+```
+
+# Flux CD example configuration and busybox deployment
+
+## Configuration steps
+
+We're going to configure our [Flux CD](https://fluxcd.io) installation in order to tell it where it can find our Kubernetes manifests so that it can create the required resources. For this step we will use the Github repo that Terraform created for us which stored in the `TF_VAR_github_repository_name` environment variable that we created at the beginning of this tutorial:
+
+```bash
+echo $TF_VAR_github_repository_name
+```
+What [Flux CD](https://fluxcd.io) expects is a `Source` and a `Kustomize` resource to be created and available. It's shipped with support for these by default via the dedicated [Source](https://fluxcd.io/docs/components/source) and [Kustomize](https://fluxcd.io/docs/components/kustomize) controllers.
+
+Please follow the steps below:
+
+1. Let's clone our new git repository and navigate to it (yes, we're going to use the environment variables that were already created in this tutorial):
+
+    ```bash
+    git clone "https://github.com/${TF_VAR_github_owner}/${TF_VAR_github_repository_name}.git"
+    cd "$TF_VAR_github_repository_name"
+    ```
+3. Before creating the resources let's store their name in dedicated environment variables in order to fetch them easily later on. Please replace the `<>` placeholders with something meaningful for your case:
+
+    ```bash
+    export FLUX_CD_SOURCE_NAME="<source_component_name>"
+    export FLUX_CD_KUSTOMIZE_NAME="<kustomize_component_name>"
+    ```
+4. Create the git `Source` component and commit the changes:
+
+    ```bash
+    flux create source git "$FLUX_CD_SOURCE_NAME" \
+        --url="https://github.com/${TF_VAR_github_owner}/${TF_VAR_github_repository_name}.git" \
+        --branch="$TF_VAR_github_repository_branch" \
+        --interval=30s \
+        --export > "./${TF_VAR_github_repository_target_path}/${FLUX_CD_SOURCE_NAME}-source.yaml"
+
+    git add -A && git commit -am "Adding the Flux CD Source component"
+    ```
+5. Next we create the path in the git repository where we store our applications deployment yaml files. As an example we will create a simple busybox deployment. Then we build the `Kustomize` resource and commit the changes:
+
+    ```bash
+    APPS_PATH="./apps/busybox"
+
+    mkdir -p $APPS_PATH
+
+    # busybox Namespace yaml file
+    cat << EOF > "${APPS_PATH}/busybox-ns.yaml"
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+        creationTimestamp: null
+        name: busybox
+    spec: {}
+    status: {}
+    EOF
+
+    # busybox Pod yaml file
+    cat << EOF > "${APPS_PATH}/busybox.yaml"
+    ---
+    apiVersion: v1
+    kind: Pod
+    metadata:
+        name: busybox1
+        namespace: busybox
+    labels:
+        app: busybox1
+    spec:
+        containers:
+        - image: busybox
+            command:
+              - sleep
+              - "3600"
+              imagePullPolicy: IfNotPresent
+            name: busybox
+        restartPolicy: Always
+    EOF
+
+    # busybox Kustomization yaml file
+    cat << EOF > "${APPS_PATH}/kustomization.yaml"
+    apiVersion: kustomize.config.k8s.io/v1beta1
+    kind: Kustomization
+
+    commonLabels:
+        app: busybox
+
+    namespace: busybox
+
+    resources:
+       - busybox.yaml
+       - busybox-ns.yaml
+    EOF
+
+    flux create kustomization "$FLUX_CD_KUSTOMIZE_NAME" \
+        --source="$FLUX_CD_SOURCE_NAME" \
+        --path="$APPS_PATH" \
+        --prune=true \
+        --validation=client \
+        --interval=5m \
+        --export > "./${TF_VAR_github_repository_target_path}/${FLUX_CD_KUSTOMIZE_NAME}-kustomization.yaml"
+
+    git add -A && git commit -am "Adding the Flux CD Kustomize component"
+    ```
+## Inspecting the results
+
+After a while the busybox namespace and associated pod should be created and running. Let's see what flux has to say about it first:
+
+```bash
+flux get kustomizations
+```
+
+The output should be something similar to (notice the `busybox` line):
+
+```
+NAME       	READY	MESSAGE                                                        	REVISION                                     	SUSPENDED 
+busybox    	True 	Applied revision: main/fa69f917302bcfd35d2959ebc398b3aa13102480	main/fa69f917302bcfd35d2959ebc398b3aa13102480	False    	
+flux-system	True 	Applied revision: main/fa69f917302bcfd35d2959ebc398b3aa13102480	main/fa69f917302bcfd35d2959ebc398b3aa13102480	False 
+```
+
+Now let's see what Kubernetes has to say. Examine the namespaces first:
+
+```bash
+kubectl get ns
+```
+
+The output should be something similar to (notice the `busybox` line):
+
+```
+NAME              STATUS   AGE
+busybox           Active   30s
+default           Active   26h
+flux-system       Active   26h
+kube-node-lease   Active   26h
+kube-public       Active   26h
+kube-system       Active   26h
+```
+
+Where is our Pod? Let's find out:
+
+```bash
+kubectl get pods -n busybox
+```
+
+The output should be something similar to (notice the `busybox1` line):
+
+```
+NAME       READY   STATUS    RESTARTS   AGE
+busybox1   1/1     Running   0          42s
+```
+
+**Success!**
+
+# Next steps
+
+## Testing other Flux CD features
+
+[Flux CD](https://fluxcd.io) supports other interesting controllers as well which can be configured and enabled like:
+ - [Notification Controller](https://fluxcd.io/docs/components/notification) which is specialized in handling inbound and outbount events
+ - [Helm Controller](https://fluxcd.io/docs/components/helm) for managing [Helm](https://helm.sh) chart releases
+ - [Image Automation Controller](https://fluxcd.io/docs/components/image) which can update a Git repository when new container images are available
+
+## Cleaning up (uninstalling) resources
+
+If you want to clean up the allocated resources and destroy all your work then [Terraform](https://www.terraform.io) can handle that for you very easily. It's just a matter of invoking the following command from the directory where this repository was cloned on your local machine:
+
+```bash
+terraform destroy
+```
+Notes:
+- **The above will destroy your target git repository as well so please follow the safer method described below**
+- The `terraform destroy` operation has an issue and it will hang when it will try to clean up the Flux CD namespace - seems to be a bug somewhere at this time of writing. 
+
+Another approach and a safer one will be to clean the resources in a step by step manner.
+
+### Flux CD uninstall
+
+```bash
+flux uninstall
+```
+Note: The above will clean up all the resources created by [Flux CD](https://fluxcd.io) like: namespaces, pods, etc.
+
+### DOKS cluster uninstall
+
+```bash
+terraform destroy --target=digitalocean_kubernetes_cluster.primary
 ```
