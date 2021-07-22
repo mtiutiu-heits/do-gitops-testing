@@ -435,7 +435,7 @@ busybox1   1/1     Running   0          42s
 
 **Success!**
 
-# Next steps
+# Final notes
 
 ## Testing other Flux CD features
 
