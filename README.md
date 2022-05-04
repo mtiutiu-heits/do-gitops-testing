@@ -1,1 +1,0 @@
-# do-gitops-testing
